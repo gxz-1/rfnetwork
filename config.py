@@ -13,7 +13,7 @@ CHECKPOINT_PATH = "models/checkpoint_epoch_10.pth"
 DATA_CONFIG = {
     # 数据目录
     "data_dir": "DATA/preprocessed",
-    "class_num": 46,  # 类别数量
+    "class_num": 40,  # 类别数量
     # 数据集参数
     "samples_per_frame": 4,  # 每帧提取的样本数
     "frame_length": 1024 * 140,  # 每帧总长度
