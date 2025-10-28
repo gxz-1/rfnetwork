@@ -346,6 +346,7 @@ def create_dataset():
                 train_dataset = pickle.load(f)
                 val_dataset = pickle.load(f)
             print("成功加载缓存的数据集")
+            val_dataset.change_split_mode("val")
             return train_dataset, val_dataset
         except Exception as e:
             print(f"加载缓存数据集失败: {str(e)}")
@@ -387,8 +388,9 @@ def create_dataset():
     train_dataset = dataset_map[MODULE_CONFIG["dataset"]](
         **dataset_params, split_mode="train"
     )
-    val_dataset = copy.deepcopy(train_dataset)
-    val_dataset.change_split_mode("val")
+    val_dataset = dataset_map[MODULE_CONFIG["dataset"]](
+        **dataset_params, split_mode="val"
+    )
 
     # 保存数据集实例到缓存
     try:
@@ -425,19 +427,18 @@ def main(model_path=None, resume=False):
     torch.backends.cudnn.deterministic = TRAIN_CONFIG["cudnn_deterministic"]
 
     train_dataset, val_dataset = create_dataset()
-
+    print(f"训练集样本数: {len(train_dataset)}")
+    print(f"验证集样本数: {len(val_dataset)}")
+    print(f"训练集模式: {train_dataset.split_mode}")
+    print(f"验证集模式: {val_dataset.split_mode}")
     # 创建数据加载器，使用DATA_CONFIG中的参数
-    if DATA_CONFIG["prefetch_factor"] == 0:
-        prefetch_factor = None
-    else:
-        prefetch_factor = DATA_CONFIG["prefetch_factor"]
     train_loader = DataLoader(
         train_dataset,
         batch_size=DATA_CONFIG["batch_size"],
         shuffle=DATA_CONFIG["shuffle"],
         num_workers=DATA_CONFIG["num_workers"],
         pin_memory=DATA_CONFIG["pin_memory"],
-        prefetch_factor=prefetch_factor,
+        **({"prefetch_factor": DATA_CONFIG["prefetch_factor"]} if DATA_CONFIG["num_workers"] > 0 and DATA_CONFIG["prefetch_factor"] > 0 else {})
     )
     val_loader = DataLoader(
         val_dataset,
@@ -445,7 +446,7 @@ def main(model_path=None, resume=False):
         shuffle=DATA_CONFIG["shuffle"],
         num_workers=DATA_CONFIG["num_workers"],
         pin_memory=DATA_CONFIG["pin_memory"],
-        prefetch_factor=prefetch_factor,
+        **({"prefetch_factor": DATA_CONFIG["prefetch_factor"]} if DATA_CONFIG["num_workers"] > 0 and DATA_CONFIG["prefetch_factor"] > 0 else {})
     )
 
     # 创建嵌入网络，使用MODEL_CONFIG中的参数

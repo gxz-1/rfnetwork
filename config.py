@@ -23,7 +23,7 @@ DATA_CONFIG = {
     "normalize": True,  # 是否归一化样本
     "normalize_way": "minmax",  # 归一化方式,minmax: 最小-最大归一化, zscore: Z-Score标准化
     # 数据加载器参数
-    "batch_size": 16,  # 批次大小
+    "batch_size": 32,  # 批次大小
     "num_workers": 0,  # 数据加载线程数
     "pin_memory": True,  # 是否将数据加载到CUDA固定内存
     "prefetch_factor": 0,  # 预取因子
@@ -70,5 +70,5 @@ MODULE_CONFIG = {
     "optimizer": "adam",  # 优化器类型, adam: Adam优化器, sgd: SGD优化器
     "scheduler": "step",  # 学习率调度器类型, step: 步进学习率调度器, cosine: 余弦退火学习率调度器
     "classifier": "fc",  # 分类器类型, fc: 全连接分类器, mlp_resnet: MLPResNet分类器
-    "status": 1,  # 状态, 1: 测试，2: 训练，3：继续训练，4: 验证数据集
+    "status": 2,  # 状态, 1: 测试，2: 训练，3：继续训练，4: 验证数据集
 }

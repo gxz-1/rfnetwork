@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-def convert_to_IQ(data_file_path, frame_length=1056 * 301, num_frames=50):
+def convert_to_IQ(data_file_path,save_path, frame_length=1056 * 75, num_frames=50):
     # Step 1: Read raw data from the .dat file
     data = np.fromfile(data_file_path, dtype=np.int32)
 
@@ -35,26 +35,40 @@ def convert_to_IQ(data_file_path, frame_length=1056 * 301, num_frames=50):
         print(f"Adjusted data length after trimming: {len(data_complex)}")
 
     # Step 7: Reshape the data
-    reshaped_data = data_complex.reshape(-1, frame_length)
-    print(f"Data shape after reshaping: {reshaped_data.shape}")
+    # reshaped_data = data_complex.reshape(-1, frame_length)
+    # print(f"Data shape after reshaping: {reshaped_data.shape}")
 
     # Step 8: Save the reshaped data to a .npy file for use with IQDataset
-    device_name = os.path.basename(data_file_path)  # Get file name without extension
-    save_path = os.path.join(os.path.dirname(data_file_path), f"{device_name}.npy")
-    np.save(save_path, reshaped_data)
-    print(f"Data saved to {save_path} with shape {reshaped_data.shape}")
+    np.save(save_path, data_complex)
+    print(f"Data saved to {save_path} with shape {data_complex.shape}")
 
-    return reshaped_data
+
+    return data_complex
+
 
 def process_directory(root_dir):
+    # 定义预处理输出根目录
+    preprocess_root = "DATA/preprocessed"
     # Traverse through all subdirectories and process .dat files
     for subdir, _, files in os.walk(root_dir):
         for file in files:
             if file.endswith('.dat'):
                 data_file_path = os.path.join(subdir, file)
                 print(f"Processing file: {data_file_path}")
-                convert_to_IQ(data_file_path)
+
+                # 计算相对路径（保持原始目录结构）
+                rel_path = os.path.relpath(subdir, root_dir)
+                # 构建预处理目录路径
+                preprocess_dir = os.path.join(preprocess_root, rel_path)
+                os.makedirs(preprocess_dir, exist_ok=True)  # 创建目录（若不存在）
+
+                # 构建保存路径
+                device_name = os.path.splitext(file)[0]
+                save_path = os.path.join(preprocess_dir, f"{device_name}.npy")
+
+                # 调用转换函数并传入保存路径
+                convert_to_IQ(data_file_path, save_path)
 
 # 传入新数据集的根目录
-root_dir = "DATA/IQ数据卫星40分类/40路/"
+root_dir = "DATA/new40classrawdata"
 process_directory(root_dir)
