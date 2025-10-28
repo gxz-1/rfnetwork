@@ -152,6 +152,12 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
     total_loss = 0
 
     for batch_idx, (data, target) in enumerate(train_loader):
+        if batch_idx == 0:
+            print("\n第一个训练批次数据检查:")
+            print(f"输入数据类型: {type(data)}")
+            print(f"输入数据形状: {[d.shape for d in data]}")
+            print(f"输入数据范围: {[f'[{d.min():.4f}, {d.max():.4f}]' for d in data]}")
+            print(f"标签示例: {target[:5]}")
         target = target if len(target) > 0 else None
         if not type(data) in (tuple, list):
             data = (data,)
@@ -265,6 +271,7 @@ def create_simple_loader(dataset):
         shuffle=False,
         num_workers=DATA_CONFIG["num_workers"],
         pin_memory=DATA_CONFIG["pin_memory"],
+        drop_last=True
     )
     val_loader = DataLoader(
         val_dataset,
@@ -272,6 +279,7 @@ def create_simple_loader(dataset):
         shuffle=False,
         num_workers=DATA_CONFIG["num_workers"],
         pin_memory=DATA_CONFIG["pin_memory"],
+        drop_last=True
     )
 
     return train_loader, val_loader
@@ -438,6 +446,7 @@ def main(model_path=None, resume=False):
         shuffle=DATA_CONFIG["shuffle"],
         num_workers=DATA_CONFIG["num_workers"],
         pin_memory=DATA_CONFIG["pin_memory"],
+        drop_last=True,
         **({"prefetch_factor": DATA_CONFIG["prefetch_factor"]} if DATA_CONFIG["num_workers"] > 0 and DATA_CONFIG["prefetch_factor"] > 0 else {})
     )
     val_loader = DataLoader(
@@ -446,6 +455,7 @@ def main(model_path=None, resume=False):
         shuffle=DATA_CONFIG["shuffle"],
         num_workers=DATA_CONFIG["num_workers"],
         pin_memory=DATA_CONFIG["pin_memory"],
+        drop_last=True,
         **({"prefetch_factor": DATA_CONFIG["prefetch_factor"]} if DATA_CONFIG["num_workers"] > 0 and DATA_CONFIG["prefetch_factor"] > 0 else {})
     )
 

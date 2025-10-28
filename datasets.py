@@ -581,10 +581,13 @@ class IQDataset(Dataset):
             imag_min = np.array(self.stats["imag_min"])
             imag_max = np.array(self.stats["imag_max"])
 
-            # 对每个时间点分别进行MinMax归一化
-            real_norm = (sample.real - real_min) / (real_max - real_min)
-            imag_norm = (sample.imag - imag_min) / (imag_max - imag_min)
+            # 添加epsilon防止除零错误
+            epsilon = 1e-8
+            real_range = np.where((real_max - real_min) < epsilon, epsilon, real_max - real_min)
+            imag_range = np.where((imag_max - imag_min) < epsilon, epsilon, imag_max - imag_min)
 
+            real_norm = (sample.real - real_min) / real_range
+            imag_norm = (sample.imag - imag_min) / imag_range
             return real_norm + 1j * imag_norm
         elif self.normalize_way == "zscore":
             # 将统计量转换为numpy数组

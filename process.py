@@ -59,7 +59,8 @@ def process_directory(root_dir):
                 # 计算相对路径（保持原始目录结构）
                 rel_path = os.path.relpath(subdir, root_dir)
                 # 构建预处理目录路径
-                preprocess_dir = os.path.join(preprocess_root, rel_path)
+                # preprocess_dir = os.path.join(preprocess_root, rel_path)
+                preprocess_dir = preprocess_root
                 os.makedirs(preprocess_dir, exist_ok=True)  # 创建目录（若不存在）
 
                 # 构建保存路径
