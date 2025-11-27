@@ -70,6 +70,6 @@ MODULE_CONFIG = {
     "dataset": "triplet",  # 数据集类型, random: 随机数据集, balanced_1: 均衡数据集1, balanced_2: 均衡数据集2, triplet: 三元组数据集, simple: 简单数据集
     "optimizer": "adam",  # 优化器类型, adam: Adam优化器, sgd: SGD优化器
     "scheduler": "step",  # 学习率调度器类型, step: 步进学习率调度器, cosine: 余弦退火学习率调度器
-    "classifier": "fc",  # 分类器类型, fc: 全连接分类器, mlp_resnet: MLPResNet分类器
+    "classifier": "mlp_resnet",  # 分类器类型, fc: 全连接分类器, mlp_resnet: MLPResNet分类器
     "status": 1,  # 状态, 1: 测试，2: 训练，3：继续训练，4: 验证数据集
 }
