@@ -1,3 +1,4 @@
+#废弃代码，使用testnew
 import torch
 import time
 from torch.utils.data import DataLoader

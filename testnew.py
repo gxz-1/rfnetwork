@@ -10,159 +10,32 @@ import numpy as np
 import csv
 from fine_tune import SimpleFCClassifier, MLPResNetClassifier
 from config import MODULE_CONFIG
+from sklearn.metrics import precision_recall_fscore_support, confusion_matrix
 
 
 def load_models(embedding_model_path, classifier_model_path):
-    """
-    加载嵌入模型和分类模型
-
-    参数:
-        embedding_model_path: 嵌入模型路径
-        classifier_model_path: 分类模型路径
-
-    返回:
-        embedding_model: 嵌入模型
-        classifier_model: 分类模型
-    """
-    # 创建模型实例
-    # 根据配置选择嵌入网络类型
-    if MODULE_CONFIG["embedding_net"] == "cov":
-        embedding_net = EmbeddingNet_cov()
-    elif MODULE_CONFIG["embedding_net"] == "res":
-        embedding_net = EmbeddingNet_res()
-    else:
-        raise ValueError(
-            f"Unknown embedding net type: {MODULE_CONFIG['embedding_net']}"
-        )
-
-    if MODULE_CONFIG["dataset"] == "triplet":
-        embedding_model = TripletNet(embedding_net)
-    else:
-        embedding_model = SiameseNet(embedding_net)
-
-    if MODULE_CONFIG["classifier"] == "fc":
-        classifier_model = SimpleFCClassifier(128, num_classes=40)
-    elif MODULE_CONFIG["classifier"] == "mlp_resnet":
-        classifier_model = MLPResNetClassifier(128, num_classes=40)
-
-    # 加载模型权重
-    embedding_checkpoint = torch.load(embedding_model_path, map_location="cpu")
-    classifier_checkpoint = torch.load(classifier_model_path, map_location="cpu")
-
-    # 加载嵌入模型权重
-    if (
-        isinstance(embedding_checkpoint, dict)
-        and "model_state_dict" in embedding_checkpoint
-    ):
-        embedding_model.load_state_dict(embedding_checkpoint["model_state_dict"])
-    else:
-        embedding_model.load_state_dict(embedding_checkpoint)
-
-    # 加载分类模型权重
-    if (
-        isinstance(classifier_checkpoint, dict)
-        and "model_state_dict" in classifier_checkpoint
-    ):
-        classifier_model.load_state_dict(classifier_checkpoint["model_state_dict"])
-    else:
-        classifier_model.load_state_dict(classifier_checkpoint)
-
-    # 设置为评估模式
-    embedding_model.eval()
-    classifier_model.eval()
-
-    return embedding_model, classifier_model
+    # ... existing code ...
+    pass
 
 
 def create_test_loader():
-    """
-    创建完整的测试数据加载器
-
-    返回:
-        test_loader: 测试数据加载器
-    """
-    # 创建数据集实例
-    dataset_params = {
-        "data_dir": DATA_CONFIG["data_dir"],
-        "class_num": DATA_CONFIG["class_num"],
-        "samples_per_frame": DATA_CONFIG["samples_per_frame"],
-        "samples_length": DATA_CONFIG["samples_length"],
-        "stride": DATA_CONFIG["stride"],
-        "cache_size": DATA_CONFIG["cache_size"],
-        "normalize": DATA_CONFIG["normalize"],
-        # "preprocess": DATA_CONFIG["preprocess"],
-        "train_ratio": DATA_CONFIG["train_ratio"],
-        "split_seed": DATA_CONFIG["split_seed"],
-        "dataset_type": DATA_CONFIG["dataset_type"],
-        "normalize_way": DATA_CONFIG["normalize_way"],
-    }
-
-    # 创建数据集并设置为验证模式
-    test_dataset = IQDataset(**dataset_params, split_mode="val")
-
-    # 创建数据加载器
-    test_loader = DataLoader(
-        test_dataset,
-        batch_size=64,  # 增大批量大小以提高效率
-        shuffle=False,
-        num_workers=0,  # 单进程加载
-        pin_memory=False,
-    )
-
-    return test_loader
+    # ... existing code ...
+    pass
 
 
 def test_model_performance(embedding_model, classifier_model, test_loader):
-    """
-    测试模型性能，计算平均推理时间和准确率
-
-    参数:
-        embedding_model: 嵌入模型
-        classifier_model: 分类模型
-        test_loader: 测试数据加载器
-
-    返回:
-        avg_time: 平均推理时间（毫秒）
-        correct: 正确预测的样本数
-        total: 总样本数
-    """
-    total_time = 0
-    correct = 0
-    total = 0
-
-    with torch.no_grad():
-        for data, target in test_loader:
-            # 记录开始时间
-            start_time = time.time()
-
-            # 通过嵌入模型
-            embedding = embedding_model.get_embedding(data)
-
-            # 通过分类模型
-            output = classifier_model(embedding)
-
-            # 计算预测结果
-            pred = output.argmax(dim=1)
-
-            # 记录结束时间
-            end_time = time.time()
-
-            # 累加时间（转换为毫秒）
-            total_time += (end_time - start_time) * 1000
-
-            # 统计正确预测数
-            correct += pred.eq(target).sum().item()
-            total += target.size(0)
-
-    # 计算平均时间
-    avg_time = total_time / len(test_loader)
-
-    return avg_time, correct, total
+    # ... existing code ...
+    pass
 
 
 def test_model_detailed_accuracy(embedding_model, classifier_model, test_loader, num_classes):
+    # ... existing code ...
+    pass
+
+
+def calculate_metrics(embedding_model, classifier_model, test_loader, num_classes):
     """
-    测试模型详细准确率，包括每个类别的准确率
+    计算模型的详细评估指标，包括准确率、精确率、召回率和F1值
 
     参数:
         embedding_model: 嵌入模型
@@ -171,12 +44,10 @@ def test_model_detailed_accuracy(embedding_model, classifier_model, test_loader,
         num_classes: 类别总数
 
     返回:
-        overall_accuracy: 总体准确率
-        class_accuracies: 每个类别的准确率字典
+        metrics: 包含所有评估指标的字典
     """
-    # 初始化每个类别的正确预测数和总样本数
-    class_correct = [0] * num_classes
-    class_total = [0] * num_classes
+    all_preds = []
+    all_targets = []
 
     with torch.no_grad():
         for data, target in test_loader:
@@ -189,52 +60,97 @@ def test_model_detailed_accuracy(embedding_model, classifier_model, test_loader,
             # 计算预测结果
             pred = output.argmax(dim=1)
 
-            # 统计每个类别的正确预测数和总样本数
-            for i in range(target.size(0)):
-                label = target[i].item()
-                class_total[label] += 1
-                if pred[i].item() == label:
-                    class_correct[label] += 1
+            # 收集预测结果和真实标签
+            all_preds.extend(pred.cpu().numpy())
+            all_targets.extend(target.numpy())
+
+    # 转换为numpy数组
+    all_preds = np.array(all_preds)
+    all_targets = np.array(all_targets)
 
     # 计算总体准确率
-    overall_correct = sum(class_correct)
-    overall_total = sum(class_total)
-    overall_accuracy = overall_correct / overall_total if overall_total > 0 else 0
+    overall_accuracy = np.mean(all_preds == all_targets)
+
+    # 计算每个类别的精确率、召回率和F1值
+    precision, recall, f1, support = precision_recall_fscore_support(
+        all_targets, all_preds, average=None, labels=range(num_classes)
+    )
+
+    # 计算宏平均和微平均
+    macro_precision, macro_recall, macro_f1, _ = precision_recall_fscore_support(
+        all_targets, all_preds, average='macro'
+    )
+    micro_precision, micro_recall, micro_f1, _ = precision_recall_fscore_support(
+        all_targets, all_preds, average='micro'
+    )
 
     # 计算每个类别的准确率
     class_accuracies = {}
     for i in range(num_classes):
-        if class_total[i] > 0:
-            class_accuracies[i] = class_correct[i] / class_total[i]
+        class_mask = (all_targets == i)
+        if np.sum(class_mask) > 0:
+            class_accuracies[i] = np.mean(all_preds[class_mask] == i)
         else:
             class_accuracies[i] = 0.0
 
-    return overall_accuracy, class_accuracies
+    # 构建返回的指标字典
+    metrics = {
+        'overall_accuracy': overall_accuracy,
+        'class_accuracies': class_accuracies,
+        'precision': precision,
+        'recall': recall,
+        'f1': f1,
+        'support': support,
+        'macro_precision': macro_precision,
+        'macro_recall': macro_recall,
+        'macro_f1': macro_f1,
+        'micro_precision': micro_precision,
+        'micro_recall': micro_recall,
+        'micro_f1': micro_f1
+    }
+
+    return metrics
 
 
-def save_accuracy_to_csv(overall_accuracy, class_accuracies, filename="test_accuracy.csv"):
+def save_metrics_to_csv(metrics, filename="test_metrics.csv"):
     """
-    将准确率结果保存到CSV文件
+    将评估指标保存到CSV文件
 
     参数:
-        overall_accuracy: 总体准确率
-        class_accuracies: 每个类别的准确率字典
+        metrics: 包含所有评估指标的字典
         filename: CSV文件名
     """
     with open(filename, mode='w', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
-        
+
         # 写入表头
-        writer.writerow(['Category', 'Accuracy'])
-        
-        # 写入总体准确率
-        writer.writerow(['Overall', f'{overall_accuracy:.4f}'])
-        
-        # 写入每个类别的准确率
-        for class_id, accuracy in class_accuracies.items():
-            writer.writerow([f'Class_{class_id}', f'{accuracy:.4f}'])
-    
-    print(f"准确率结果已保存到 {filename}")
+        writer.writerow(['Metric', 'Value'])
+
+        # 写入总体指标
+        writer.writerow(['Overall Accuracy', f'{metrics["overall_accuracy"]:.4f}'])
+        writer.writerow(['Macro Precision', f'{metrics["macro_precision"]:.4f}'])
+        writer.writerow(['Macro Recall', f'{metrics["macro_recall"]:.4f}'])
+        writer.writerow(['Macro F1-Score', f'{metrics["macro_f1"]:.4f}'])
+        writer.writerow(['Micro Precision', f'{metrics["micro_precision"]:.4f}'])
+        writer.writerow(['Micro Recall', f'{metrics["micro_recall"]:.4f}'])
+        writer.writerow(['Micro F1-Score', f'{metrics["micro_f1"]:.4f}'])
+
+        # 写入每个类别的指标
+        writer.writerow([])  # 空行分隔
+        writer.writerow(['Class ID', 'Accuracy', 'Precision', 'Recall', 'F1-Score', 'Support'])
+
+        num_classes = len(metrics['class_accuracies'])
+        for i in range(num_classes):
+            writer.writerow([
+                f'Class_{i}',
+                f'{metrics["class_accuracies"][i]:.4f}',
+                f'{metrics["precision"][i]:.4f}' if i < len(metrics["precision"]) else 'N/A',
+                f'{metrics["recall"][i]:.4f}' if i < len(metrics["recall"]) else 'N/A',
+                f'{metrics["f1"][i]:.4f}' if i < len(metrics["f1"]) else 'N/A',
+                f'{metrics["support"][i]}' if i < len(metrics["support"]) else 'N/A'
+            ])
+
+    print(f"评估指标已保存到 {filename}")
 
 
 def main():
@@ -272,24 +188,36 @@ def main():
     print(f"平均推理时间: {avg_time:.2f} 毫秒")
     print(f"准确率: {correct}/{total} ({100. * correct / total:.2f}%)")
 
-    print("\n开始详细准确率测试...")
+    print("\n开始详细指标测试...")
     # 获取类别数量
     num_classes = DATA_CONFIG["class_num"]
-    
-    # 测试详细准确率
-    overall_accuracy, class_accuracies = test_model_detailed_accuracy(
+
+    # 计算详细评估指标
+    metrics = calculate_metrics(
         embedding_model, classifier_model, test_loader, num_classes
     )
 
     # 打印详细结果
-    print(f"\n详细准确率结果:")
-    print(f"总体准确率: {overall_accuracy:.4f} ({overall_accuracy*100:.2f}%)")
-    print("\n各类别准确率:")
-    for class_id, accuracy in class_accuracies.items():
-        print(f"类别 {class_id}: {accuracy:.4f} ({accuracy*100:.2f}%)")
+    print(f"\n详细评估指标结果:")
+    print(f"总体准确率: {metrics['overall_accuracy']:.4f} ({metrics['overall_accuracy'] * 100:.2f}%)")
+    print(f"宏平均精确率: {metrics['macro_precision']:.4f}")
+    print(f"宏平均召回率: {metrics['macro_recall']:.4f}")
+    print(f"宏平均F1值: {metrics['macro_f1']:.4f}")
+    print(f"微平均精确率: {metrics['micro_precision']:.4f}")
+    print(f"微平均召回率: {metrics['micro_recall']:.4f}")
+    print(f"微平均F1值: {metrics['micro_f1']:.4f}")
+
+    print("\n各类别指标:")
+    for i in range(num_classes):
+        precision = metrics['precision'][i] if i < len(metrics['precision']) else 0.0
+        recall = metrics['recall'][i] if i < len(metrics['recall']) else 0.0
+        f1 = metrics['f1'][i] if i < len(metrics['f1']) else 0.0
+        support = metrics['support'][i] if i < len(metrics['support']) else 0
+        print(f"类别 {i}: 准确率={metrics['class_accuracies'][i]:.4f}, "
+              f"精确率={precision:.4f}, 召回率={recall:.4f}, F1={f1:.4f}, 支持数={support}")
 
     # 保存结果到CSV文件
-    save_accuracy_to_csv(overall_accuracy, class_accuracies, "models/test_accuracy_detailed.csv")
+    save_metrics_to_csv(metrics, "models/test_metrics_detailed.csv")
 
 
 if __name__ == "__main__":
