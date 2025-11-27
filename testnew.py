@@ -6,6 +6,8 @@ from networks import EmbeddingNet_res, EmbeddingNet_cov, TripletNet, SiameseNet
 from config import DATA_CONFIG
 import os
 import random
+import numpy as np
+import csv
 from fine_tune import SimpleFCClassifier, MLPResNetClassifier
 from config import MODULE_CONFIG
 
@@ -72,12 +74,9 @@ def load_models(embedding_model_path, classifier_model_path):
     return embedding_model, classifier_model
 
 
-def create_test_loader(num_samples=60):
+def create_test_loader():
     """
-    创建测试数据加载器，随机选择指定数量的样本
-
-    参数:
-        num_samples: 需要选择的样本数量
+    创建完整的测试数据加载器
 
     返回:
         test_loader: 测试数据加载器
@@ -101,14 +100,10 @@ def create_test_loader(num_samples=60):
     # 创建数据集并设置为验证模式
     test_dataset = IQDataset(**dataset_params, split_mode="val")
 
-    # 随机选择指定数量的样本
-    indices = random.sample(range(len(test_dataset)), num_samples)
-    test_dataset = torch.utils.data.Subset(test_dataset, indices)
-
     # 创建数据加载器
     test_loader = DataLoader(
         test_dataset,
-        batch_size=1,  # 单样本推理
+        batch_size=64,  # 增大批量大小以提高效率
         shuffle=False,
         num_workers=0,  # 单进程加载
         pin_memory=False,
@@ -119,7 +114,7 @@ def create_test_loader(num_samples=60):
 
 def test_model_performance(embedding_model, classifier_model, test_loader):
     """
-    测试模型性能，计算平均推理时间
+    测试模型性能，计算平均推理时间和准确率
 
     参数:
         embedding_model: 嵌入模型
@@ -165,12 +160,89 @@ def test_model_performance(embedding_model, classifier_model, test_loader):
     return avg_time, correct, total
 
 
+def test_model_detailed_accuracy(embedding_model, classifier_model, test_loader, num_classes):
+    """
+    测试模型详细准确率，包括每个类别的准确率
+
+    参数:
+        embedding_model: 嵌入模型
+        classifier_model: 分类模型
+        test_loader: 测试数据加载器
+        num_classes: 类别总数
+
+    返回:
+        overall_accuracy: 总体准确率
+        class_accuracies: 每个类别的准确率字典
+    """
+    # 初始化每个类别的正确预测数和总样本数
+    class_correct = [0] * num_classes
+    class_total = [0] * num_classes
+
+    with torch.no_grad():
+        for data, target in test_loader:
+            # 通过嵌入模型
+            embedding = embedding_model.get_embedding(data)
+
+            # 通过分类模型
+            output = classifier_model(embedding)
+
+            # 计算预测结果
+            pred = output.argmax(dim=1)
+
+            # 统计每个类别的正确预测数和总样本数
+            for i in range(target.size(0)):
+                label = target[i].item()
+                class_total[label] += 1
+                if pred[i].item() == label:
+                    class_correct[label] += 1
+
+    # 计算总体准确率
+    overall_correct = sum(class_correct)
+    overall_total = sum(class_total)
+    overall_accuracy = overall_correct / overall_total if overall_total > 0 else 0
+
+    # 计算每个类别的准确率
+    class_accuracies = {}
+    for i in range(num_classes):
+        if class_total[i] > 0:
+            class_accuracies[i] = class_correct[i] / class_total[i]
+        else:
+            class_accuracies[i] = 0.0
+
+    return overall_accuracy, class_accuracies
+
+
+def save_accuracy_to_csv(overall_accuracy, class_accuracies, filename="test_accuracy.csv"):
+    """
+    将准确率结果保存到CSV文件
+
+    参数:
+        overall_accuracy: 总体准确率
+        class_accuracies: 每个类别的准确率字典
+        filename: CSV文件名
+    """
+    with open(filename, mode='w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        
+        # 写入表头
+        writer.writerow(['Category', 'Accuracy'])
+        
+        # 写入总体准确率
+        writer.writerow(['Overall', f'{overall_accuracy:.4f}'])
+        
+        # 写入每个类别的准确率
+        for class_id, accuracy in class_accuracies.items():
+            writer.writerow([f'Class_{class_id}', f'{accuracy:.4f}'])
+    
+    print(f"准确率结果已保存到 {filename}")
+
+
 def main():
     # 设置随机种子以确保可重复性
     random.seed(42)
     torch.manual_seed(42)
 
-    # 模型路径
+    # TODO 模型路径
     embedding_model_path = "models/best_model.pth"
     classifier_model_path = "models/best_model.pth_Classifier.pth"
     # embedding_model_path = "models/checkpoint_epoch_25.pth"
@@ -188,7 +260,7 @@ def main():
     )
 
     print("正在准备测试数据...")
-    test_loader = create_test_loader(num_samples=60)
+    test_loader = create_test_loader()
 
     print("开始性能测试...")
     avg_time, correct, total = test_model_performance(
@@ -199,6 +271,25 @@ def main():
     print("\n测试结果:")
     print(f"平均推理时间: {avg_time:.2f} 毫秒")
     print(f"准确率: {correct}/{total} ({100. * correct / total:.2f}%)")
+
+    print("\n开始详细准确率测试...")
+    # 获取类别数量
+    num_classes = DATA_CONFIG["class_num"]
+    
+    # 测试详细准确率
+    overall_accuracy, class_accuracies = test_model_detailed_accuracy(
+        embedding_model, classifier_model, test_loader, num_classes
+    )
+
+    # 打印详细结果
+    print(f"\n详细准确率结果:")
+    print(f"总体准确率: {overall_accuracy:.4f} ({overall_accuracy*100:.2f}%)")
+    print("\n各类别准确率:")
+    for class_id, accuracy in class_accuracies.items():
+        print(f"类别 {class_id}: {accuracy:.4f} ({accuracy*100:.2f}%)")
+
+    # 保存结果到CSV文件
+    save_accuracy_to_csv(overall_accuracy, class_accuracies, "models/test_accuracy_detailed.csv")
 
 
 if __name__ == "__main__":

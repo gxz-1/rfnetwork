@@ -26,6 +26,170 @@ import pickle
 import matplotlib.pyplot as plt
 
 
+def compute_nearest_neighbor_accuracy(embeddings, labels, cuda=False):
+    """
+    计算最近邻准确率
+
+    参数:
+        embeddings: 嵌入向量 (numpy array or torch.Tensor)
+        labels: 对应标签 (numpy array or torch.Tensor)
+        cuda: 是否使用CUDA
+
+    返回:
+        accuracy: 最近邻准确率
+    """
+    if isinstance(embeddings, torch.Tensor):
+        embeddings = embeddings.cpu().numpy()
+    if isinstance(labels, torch.Tensor):
+        labels = labels.cpu().numpy()
+
+    # 计算距离矩阵
+    distances = np.linalg.norm(embeddings[:, np.newaxis] - embeddings, axis=2)
+
+    # 将对角线设为无穷大以排除自身比较
+    np.fill_diagonal(distances, np.inf)
+
+    # 找到每个样本最近邻的索引
+    nearest_neighbors = np.argmin(distances, axis=1)
+
+    # 比较最近邻的标签是否与原标签相同
+    neighbor_labels = labels[nearest_neighbors]
+    accuracy = np.mean(labels == neighbor_labels)
+
+    return accuracy
+
+
+def compute_intra_inter_class_distances(embeddings, labels, cuda=False):
+    """
+    计算类内距离和类间距离
+
+    参数:
+        embeddings: 嵌入向量 (numpy array or torch.Tensor)
+        labels: 对应标签 (numpy array or torch.Tensor)
+        cuda: 是否使用CUDA
+
+    返回:
+        intra_class_distances: 类内距离列表
+        inter_class_distances: 类间距离列表
+    """
+    if isinstance(embeddings, torch.Tensor):
+        embeddings = embeddings.cpu().numpy()
+    if isinstance(labels, torch.Tensor):
+        labels = labels.cpu().numpy()
+
+    unique_labels = np.unique(labels)
+
+    intra_class_distances = []
+    inter_class_distances = []
+
+    # 计算所有嵌入之间的距离矩阵
+    distances = np.linalg.norm(embeddings[:, np.newaxis] - embeddings, axis=2)
+
+    # 遍历每一对嵌入
+    for i in range(len(embeddings)):
+        for j in range(i + 1, len(embeddings)):
+            distance = distances[i, j]
+            if labels[i] == labels[j]:
+                # 类内距离
+                intra_class_distances.append(distance)
+            else:
+                # 类间距离
+                inter_class_distances.append(distance)
+
+    return intra_class_distances, inter_class_distances
+
+
+def evaluate_embeddings(train_loader, val_loader, model, num_classes, cuda=False):
+    """
+    评估嵌入向量的质量，包括最近邻准确率和类内/类间距离分析
+
+    参数:
+        train_loader: 训练数据加载器
+        val_loader: 验证数据加载器
+        model: 嵌入模型
+        num_classes: 类别数量
+        cuda: 是否使用CUDA
+    """
+    model.eval()
+
+    # 收集所有嵌入向量和标签
+    all_embeddings = []
+    all_labels = []
+
+    with torch.no_grad():
+        # 处理训练集
+        for data, target in train_loader:
+            if not isinstance(data, (list, tuple)):
+                data = (data,)
+            if cuda:
+                data = tuple(d.cuda() for d in data)
+
+            outputs = model(*data)
+            if isinstance(outputs, (list, tuple)):
+                embeddings = outputs[0]  # 假设第一个输出是嵌入向量
+            else:
+                embeddings = outputs
+
+            all_embeddings.append(embeddings.cpu())
+            all_labels.append(target)
+
+        # 处理验证集
+        for data, target in val_loader:
+            if not isinstance(data, (list, tuple)):
+                data = (data,)
+            if cuda:
+                data = tuple(d.cuda() for d in data)
+
+            outputs = model(*data)
+            if isinstance(outputs, (list, tuple)):
+                embeddings = outputs[0]  # 假设第一个输出是嵌入向量
+            else:
+                embeddings = outputs
+
+            all_embeddings.append(embeddings.cpu())
+            all_labels.append(target)
+
+    # 合并所有嵌入和标签
+    all_embeddings = torch.cat(all_embeddings, dim=0)
+    all_labels = torch.cat(all_labels, dim=0)
+
+    # 计算最近邻准确率
+    nn_accuracy = compute_nearest_neighbor_accuracy(all_embeddings, all_labels, cuda)
+    print(f"最近邻准确率: {nn_accuracy:.4f}")
+
+    # 计算类内和类间距离
+    intra_distances, inter_distances = compute_intra_inter_class_distances(
+        all_embeddings, all_labels, cuda
+    )
+
+    avg_intra_distance = np.mean(intra_distances)
+    avg_inter_distance = np.mean(inter_distances)
+    distance_ratio = avg_intra_distance / avg_inter_distance if avg_inter_distance > 0 else 0
+
+    print(f"平均类内距离: {avg_intra_distance:.4f}")
+    print(f"平均类间距离: {avg_inter_distance:.4f}")
+    print(f"类内/类间距离比: {distance_ratio:.4f}")
+
+    # 可视化类内和类间距离分布
+    plt.figure(figsize=(10, 6))
+    plt.hist(intra_distances, bins=50, alpha=0.7, label='类内距离', color='blue')
+    plt.hist(inter_distances, bins=50, alpha=0.7, label='类间距离', color='red')
+    plt.xlabel('距离')
+    plt.ylabel('频次')
+    plt.title('类内距离 vs 类间距离分布')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig('models/intra_inter_distance_distribution.png')
+    plt.close()
+
+    return {
+        'nn_accuracy': nn_accuracy,
+        'avg_intra_distance': avg_intra_distance,
+        'avg_inter_distance': avg_inter_distance,
+        'distance_ratio': distance_ratio
+    }
+
+
 def fit(
     train_loader,
     val_loader,
@@ -526,6 +690,14 @@ def main(model_path=None, resume=False):
             num_classes=DATA_CONFIG["class_num"],
             cuda=cuda,
         )
+        # 计算新增的评估指标
+        print("正在计算Nearest Neighbor Accuracy和类内/类间距离...")
+        eval_metrics = evaluate_embeddings(
+            train_loader, val_loader, model,
+            num_classes=DATA_CONFIG["class_num"],
+            cuda=cuda
+        )
+        print("评估指标计算完成!")
     else:
         print("训练模型...")
         # 从检查点恢复训练，或者从头开始训练
