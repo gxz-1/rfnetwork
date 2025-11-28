@@ -185,6 +185,11 @@ def evaluate_embeddings(train_loader, val_loader, model, num_classes, cuda=False
                 if cuda:
                     data = tuple(d.cuda() for d in data)
 
+                # SiameseNet 需要两个输入，复制数据作为第二个输入
+                if isinstance(model, SiameseNet):
+                    # 将单个输入复制为两份，满足孪生网络的输入要求
+                    data = (data[0], data[0])
+
                 outputs = model(*data)
                 if isinstance(outputs, (list, tuple)):
                     embeddings = outputs[0]  # 假设第一个输出是嵌入向量

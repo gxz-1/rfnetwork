@@ -4,8 +4,8 @@
 """
 
 # 测试模型路径
-TEST_MODEL_PATH = "models/best_model.pth"
-# TEST_MODEL_PATH = "balanced_2/checkpoint_epoch_20.pth"
+# TEST_MODEL_PATH = "models/best_model.pth"
+TEST_MODEL_PATH = "balanced_1/checkpoint_epoch_10.pth"
 
 # 检查点路径
 CHECKPOINT_PATH = "models/checkpoint_epoch_10.pth"
@@ -71,5 +71,5 @@ MODULE_CONFIG = {
     "optimizer": "adam",  # 优化器类型, adam: Adam优化器, sgd: SGD优化器
     "scheduler": "step",  # 学习率调度器类型, step: 步进学习率调度器, cosine: 余弦退火学习率调度器
     "classifier": "mlp_resnet",  # 分类器类型, fc: 全连接分类器, mlp_resnet: MLPResNet分类器
-    "status": 2,  # 状态, 1: 测试，2: 训练，3：继续训练，4: 验证数据集
+    "status": 1,  # 状态, 1: 测试，2: 训练，3：继续训练，4: 验证数据集
 }
