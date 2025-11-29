@@ -56,12 +56,18 @@
 每个类别的帧数: 类别0: 191, 类别1: 191, 类别2: 191, 类别3: 191, 类别4: 191, 类别5: 191, 类别6: 191, 类别7: 191, 类别8: 191, 类别9: 191, 类别10: 191, 类别11: 191, 类别12: 191, 类别13: 191, 类别14: 191, 类别15: 191, 类别16: 191, 类别17: 191, 类别18: 191, 类别19: 191, 类别20: 191, 类别21: 191, 类别22: 191, 类别23: 191, 类别24: 191, 类别25: 191, 类别26: 191, 类别27: 191, 类别28: 191, 类别29: 191, 类别30: 184, 类别31: 191, 类别32: 191, 类别33: 191, 类别34: 191, 类别35: 191, 类别36: 191, 类别37: 191, 类别38: 191, 类别39: 191
 加载已有的训练集/验证集划分，训练集: 24417，验证集: 6115
 ````
-4. 训练 trainer.py
+4. 训练 trainer.py  
 从嵌入向量可视化图和Nearest Neighbor Accuracy、Intra-class Distance vs Inter-class Distance这两个指标评估模型
-同时输出训练中loss变化图（traning_loss_curves.png）
-5. 微调（分类器） fine_tune.py
+同时输出训练中loss变化图（traning_loss_curves.png）  
+**可视化参数**  
+VISUALIZATION_CONFIG = {
+    "tsne_perplexity": 30,  # t-SNE困惑度参数
+    "tsne_n_iter": 1000,  # t-SNE迭代次数
+    "figsize": (10, 8),  # 图像大小
+}
+5. 微调（分类器） fine_tune.py  
 参数classifier：不同的分类器fc: 全连接分类器, mlp_resnet: MLPResNet分类器（MLPResNetClassifier）
-输出混淆矩阵以及分类器模型
+输出混淆矩阵以及分类器模型  
 同时输出微调中loss和准确率变化图（traning_curves.png）
-6. 测试 testnew.py
+6. 测试 testnew.py  
 输出准确率 精确率 召回率 F1值等信息

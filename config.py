@@ -5,7 +5,7 @@
 
 # 测试模型路径
 # TEST_MODEL_PATH = "models/best_model.pth"
-TEST_MODEL_PATH = "balanced_1/checkpoint_epoch_10.pth"
+TEST_MODEL_PATH = "random/checkpoint_epoch_15.pth"
 
 # 检查点路径
 CHECKPOINT_PATH = "models/checkpoint_epoch_10.pth"
@@ -67,7 +67,7 @@ VISUALIZATION_CONFIG = {
 # 模块参数
 MODULE_CONFIG = {
     "embedding_net": "res",  # 嵌入网络类型, cov: 卷积网络, res: 残差网络
-    "dataset": "balanced_1",  # 数据集类型, random: 随机数据集, balanced_1: 均衡数据集1, balanced_2: 均衡数据集2, triplet: 三元组数据集, simple: 简单数据集
+    "dataset": "random",  # 数据集类型, random: 随机数据集, balanced_1: 均衡数据集1, balanced_2: 均衡数据集2, triplet: 三元组数据集, simple: 简单数据集
     "optimizer": "adam",  # 优化器类型, adam: Adam优化器, sgd: SGD优化器
     "scheduler": "step",  # 学习率调度器类型, step: 步进学习率调度器, cosine: 余弦退火学习率调度器
     "classifier": "mlp_resnet",  # 分类器类型, fc: 全连接分类器, mlp_resnet: MLPResNet分类器
