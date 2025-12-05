@@ -3,7 +3,7 @@ import time
 from torch.utils.data import DataLoader
 from datasets import IQDataset
 from networks import EmbeddingNet_res, EmbeddingNet_cov, TripletNet, SiameseNet
-from config import DATA_CONFIG
+from config import DATA_CONFIG, TEST_MODEL_PATH, TEST_CLSMODEL_PATH
 import os
 import random
 import numpy as np
@@ -311,8 +311,8 @@ def main():
     # TODO 模型路径
     # embedding_model_path = "models/best_model.pth"
     # classifier_model_path = "models/best_model.pth_Classifier.pth"
-    embedding_model_path = "models/best_model.pth"
-    classifier_model_path = "models/mlp_resnet/best_model.pth_Classifier.pth"
+    embedding_model_path = TEST_MODEL_PATH
+    classifier_model_path = TEST_CLSMODEL_PATH
 
     # 检查模型文件是否存在
     if not os.path.exists(embedding_model_path):
@@ -368,7 +368,7 @@ def main():
 
     # 保存结果到CSV文件 (更新参数)
     save_metrics_to_csv(overall_accuracy, class_metrics, confusion_matrix, macro_precision, macro_recall, macro_f1,
-                        micro_precision, micro_recall, micro_f1, "models/test_metrics_detailed.csv")
+                        micro_precision, micro_recall, micro_f1, TEST_MODEL_PATH +"." +"test_metrics_detailed.csv")
 
 if __name__ == "__main__":
     main()

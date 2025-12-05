@@ -13,6 +13,14 @@
 输出存储：将处理后的复数数组保存为.npy格式，保留原始文件名
 ````
 2. datasets.py 数据集划分
+在使用balanced_1、balanced_2、random时使用SiameseNet（可以认为是传统的孪生网络模型）
+在使用triplet时使用TripletNet（可以认为在此基础上进行了优化，增加了一个negative样本）
+```commandline
+    if MODULE_CONFIG["dataset"] == "triplet":
+        model = TripletNet(embedding_net)
+    else:
+        model = SiameseNet(embedding_net)
+```
 参数normalize_way：不同的归一化方式minmax: 最小-最大归一化, zscore: Z-Score标准化 
 ### random（随机数据集）
 - **对应类**：`SiameseIQDataset_random`
@@ -57,7 +65,8 @@
 加载已有的训练集/验证集划分，训练集: 24417，验证集: 6115
 ````
 4. 训练 trainer.py  
-从嵌入向量可视化图和Nearest Neighbor Accuracy、Intra-class Distance vs Inter-class Distance这两个指标评估模型
+从嵌入向量可视化图和Nearest Neighbor Accuracy（knn k=1）、正负样本距离差（positive distance - negative distance）、
+正负样本距离比（positive distance / negative distance）这三个指标评估模型
 同时输出训练中loss变化图（traning_loss_curves.png）  
 **可视化参数**  
 VISUALIZATION_CONFIG = {
